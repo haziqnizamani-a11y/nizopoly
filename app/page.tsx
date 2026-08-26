@@ -1,65 +1,131 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { TOKENS } from "@/lib/game/board";
+import { recallName, rememberName, saveSession } from "@/lib/client/session";
 
 export default function Home() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // localStorage and the URL are only readable after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setName(recallName());
+    const url = new URL(window.location.href);
+    const c = url.searchParams.get("code");
+    if (c) setCode(c.toUpperCase());
+  }, []);
+
+  const create = async () => {
+    if (!name.trim()) return setError("Enter your name first.");
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/rooms", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Could not create a room.");
+      rememberName(name.trim());
+      saveSession(body.code, { playerId: body.playerId, secret: body.secret, name: name.trim() });
+      router.push(`/room/${body.code}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not create a room.");
+      setBusy(false);
+    }
+  };
+
+  const join = async () => {
+    if (!name.trim()) return setError("Enter your name first.");
+    const room = code.trim().toUpperCase();
+    if (room.length < 4) return setError("Room codes are four characters.");
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/rooms/${room}/join`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Could not join.");
+      rememberName(name.trim());
+      saveSession(room, { playerId: body.playerId, secret: body.secret, name: name.trim() });
+      router.push(`/room/${room}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not join.");
+      setBusy(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-5 p-5">
+      <header className="text-center">
+        <h1 className="text-5xl font-black tracking-tight text-[var(--accent)]">NIZOPOLY</h1>
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">
+          Karachi, Hyderabad and the orchard — buy it all.
+        </p>
+        <div className="mt-3 flex justify-center gap-1 text-2xl">
+          {TOKENS.map((t) => (
+            <span key={t.id} title={t.name}>
+              {t.emoji}
+            </span>
+          ))}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </header>
+
+      <div className="card flex flex-col gap-3 p-5">
+        <label className="flex flex-col gap-1">
+          <span className="label">Your name</span>
+          <input
+            className="input"
+            value={name}
+            maxLength={20}
+            placeholder="Haziq"
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="nickname"
+          />
+        </label>
+
+        <button className="btn btn-primary" disabled={busy} onClick={create}>
+          Start a new game
+        </button>
+
+        <div className="flex items-center gap-3 py-1">
+          <div className="h-px flex-1 bg-[var(--line)]" />
+          <span className="label">or join</span>
+          <div className="h-px flex-1 bg-[var(--line)]" />
         </div>
-      </main>
-    </div>
+
+        <div className="flex gap-2">
+          <input
+            className="input text-center text-xl font-bold uppercase tracking-[0.3em]"
+            value={code}
+            maxLength={6}
+            placeholder="CODE"
+            inputMode="text"
+            autoCapitalize="characters"
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === "Enter" && join()}
+          />
+          <button className="btn shrink-0" disabled={busy} onClick={join}>
+            Join
+          </button>
+        </div>
+
+        {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
+      </div>
+
+      <p className="text-center text-xs text-[var(--ink-soft)]">
+        Everyone plays on their own phone. Two to six players.
+      </p>
+    </main>
   );
 }
