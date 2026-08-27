@@ -10,7 +10,7 @@ import {
   startGame,
   type Action,
 } from "../game/engine";
-import type { GameState } from "../game/types";
+import { BOARD_VERSION, type GameState } from "../game/types";
 import { checkSecret, codeExists, insertGame, putSecret, readGame, writeGame } from "./store";
 
 /** No I/O/0/1 — these get read aloud over the phone. */
@@ -76,6 +76,7 @@ export async function joinRoom(code: string, rawName: string): Promise<Credentia
   for (let attempt = 0; attempt < 5; attempt++) {
     const state = await readGame(code);
     if (!state) throw new ApiError("No room with that code.", 404);
+    if (state.version !== BOARD_VERSION) throw new ApiError(OUTDATED, 409);
     if (state.phase !== "lobby") throw new ApiError("That game has already started.", 409);
 
     let next: GameState;
@@ -92,9 +93,13 @@ export async function joinRoom(code: string, rawName: string): Promise<Credentia
   throw new ApiError("The room is busy. Try again.", 409);
 }
 
+const OUTDATED =
+  "This room was created on an older board and can't be continued. Start a new game.";
+
 export async function getRoom(code: string): Promise<GameState> {
   const state = await readGame(code);
   if (!state) throw new ApiError("No room with that code.", 404);
+  if (state.version !== BOARD_VERSION) throw new ApiError(OUTDATED, 409);
   return state;
 }
 
@@ -114,6 +119,7 @@ export async function actOnRoom(
   for (let attempt = 0; attempt < 6; attempt++) {
     const state = await readGame(code);
     if (!state) throw new ApiError("No room with that code.", 404);
+    if (state.version !== BOARD_VERSION) throw new ApiError(OUTDATED, 409);
 
     let next: GameState;
     try {

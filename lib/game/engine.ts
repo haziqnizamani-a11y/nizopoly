@@ -10,15 +10,20 @@ import {
   PASS_GO,
   START_CASH,
   TOKENS,
-  TOLL_TILES,
+  STATION_TILES,
+  STATION_RENT,
+  UTILITY_TILES,
+  UTILITY_MULTIPLIER,
   money,
   tile,
 } from "./board";
 import { CHANCE, CHEST, cardById } from "./cards";
 import { nextSeed, rollDice, shuffle } from "./rng";
 import {
+  BOARD_VERSION,
   isProperty,
-  isToll,
+  isStation,
+  isUtility,
   isTax,
   isOwnable,
   type Card,
@@ -26,7 +31,8 @@ import {
   type GroupId,
   type Player,
   type PropertyTile,
-  type TollTile,
+  type StationTile,
+  type UtilityTile,
 } from "./types";
 
 export class GameError extends Error {}
@@ -64,7 +70,7 @@ export function createGame(hostId: string, hostName: string, seed: number): Game
   const s1 = shuffle(CHANCE.map((c) => c.id), seed);
   const s2 = shuffle(CHEST.map((c) => c.id), s1.seed);
   return {
-    version: 1,
+    version: BOARD_VERSION,
     phase: "lobby",
     hostId,
     players: [newPlayer(hostId, hostName, TOKENS[0].id)],
@@ -222,7 +228,7 @@ export function netWorth(s: GameState, playerId: string): number {
   if (!p) return 0;
   let total = p.cash;
   for (const i of tilesOwnedBy(s, playerId)) {
-    const t = tile(i) as PropertyTile | TollTile;
+    const t = tile(i) as PropertyTile | StationTile | UtilityTile;
     const st = ownState(s, i);
     total += st.mortgaged ? Math.floor(t.price / 2) : t.price;
     if (isProperty(t)) total += st.houses * t.houseCost;
@@ -235,9 +241,13 @@ export function rentFor(s: GameState, index: number, diceTotal: number): number 
   const st = s.tiles[index];
   if (!st || !st.owner || st.mortgaged) return 0;
 
-  if (isToll(t)) {
-    const owned = TOLL_TILES.filter((i) => ownerOf(s, i) === st.owner).length;
-    return diceTotal * (owned >= 2 ? 250 : 100);
+  if (isStation(t)) {
+    const owned = STATION_TILES.filter((i) => ownerOf(s, i) === st.owner).length;
+    return STATION_RENT[owned] ?? 0;
+  }
+  if (isUtility(t)) {
+    const owned = UTILITY_TILES.filter((i) => ownerOf(s, i) === st.owner).length;
+    return diceTotal * (owned >= 2 ? UTILITY_MULTIPLIER.both : UTILITY_MULTIPLIER.one);
   }
   if (isProperty(t)) {
     if (st.houses > 0) return t.rent[st.houses];

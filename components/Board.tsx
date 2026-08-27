@@ -5,29 +5,39 @@ import { BOARD, GROUPS, TOKENS, money } from "@/lib/game/board";
 import { useAnimatedPositions } from "@/lib/client/useAnimatedPositions";
 import { sound } from "@/lib/client/sound";
 import { CardDecks, DeckViewer, DECK_META, type DeckId } from "./CardDecks";
-import { isOwnable, isProperty, isTax, isToll, type GameState, type Tile } from "@/lib/game/types";
+import {
+  isOwnable,
+  isProperty,
+  isStation,
+  isTax,
+  isUtility,
+  type GameState,
+  type Tile,
+} from "@/lib/game/types";
 import { PLAYER_COLORS } from "./PlayerList";
 
 /**
- * The 28 tiles wrap the edge of an 8x8 grid (perimeter = 8*4-4 = 28), starting
- * at GO in the bottom-right and running anticlockwise.
+ * The 40 tiles wrap the edge of an 11x11 grid (perimeter = 11*4-4 = 40),
+ * starting at GO in the bottom-right and running anticlockwise.
  */
+export const GRID = 11;
+
 export function tilePos(i: number): { row: number; col: number } {
-  if (i === 0) return { row: 8, col: 8 };
-  if (i <= 6) return { row: 8, col: 8 - i };
-  if (i === 7) return { row: 8, col: 1 };
-  if (i <= 13) return { row: 15 - i, col: 1 };
-  if (i === 14) return { row: 1, col: 1 };
-  if (i <= 20) return { row: 1, col: i - 13 };
-  if (i === 21) return { row: 1, col: 8 };
-  return { row: i - 20, col: 8 };
+  if (i === 0) return { row: 11, col: 11 };
+  if (i <= 9) return { row: 11, col: 11 - i };
+  if (i === 10) return { row: 11, col: 1 };
+  if (i <= 19) return { row: 21 - i, col: 1 };
+  if (i === 20) return { row: 1, col: 1 };
+  if (i <= 29) return { row: 1, col: i - 19 };
+  if (i === 30) return { row: 1, col: 11 };
+  return { row: i - 29, col: 11 };
 }
 
 const CORNER_LABEL: Record<number, { title: string; icon: string }> = {
   0: { title: "GO", icon: "→" },
-  7: { title: "Jail", icon: "🔒" },
-  14: { title: "Free Parking", icon: "🅿️" },
-  21: { title: "Go To Jail", icon: "🚨" },
+  10: { title: "Jail", icon: "🔒" },
+  20: { title: "Free Parking", icon: "🅿️" },
+  30: { title: "Go To Jail", icon: "🚨" },
 };
 
 function groupColor(t: Tile): string | null {
@@ -121,7 +131,12 @@ export function Board({ state, me, onSelect, selected }: Props) {
                     {isTax(t) && <span className="tile-sub">{money(t.amount)}</span>}
                     {t.kind === "chance" && <span className="text-[clamp(8px,2.4cqi,16px)]">🚗</span>}
                     {t.kind === "chest" && <span className="text-[clamp(8px,2.4cqi,16px)]">🥭</span>}
-                    {isToll(t) && <span className="text-[clamp(8px,2.4cqi,16px)]">🛣️</span>}
+                    {isStation(t) && <span className="text-[clamp(8px,2.4cqi,16px)]">🚌</span>}
+                    {isUtility(t) && (
+                      <span className="text-[clamp(8px,2.4cqi,16px)]">
+                        {t.index === 12 ? "💡" : "🚰"}
+                      </span>
+                    )}
                   </>
                 )}
 
@@ -138,7 +153,7 @@ export function Board({ state, me, onSelect, selected }: Props) {
 
         <div
           className="flex flex-col items-center justify-center gap-[2cqi] p-3 text-center"
-          style={{ gridRow: "2 / 8", gridColumn: "2 / 8", background: "var(--surface-2)" }}
+          style={{ gridRow: "2 / 11", gridColumn: "2 / 11", background: "var(--surface-2)" }}
         >
           <BoardCentre state={state} onOpenDeck={setDeckOpen} />
         </div>
@@ -174,7 +189,7 @@ export function Board({ state, me, onSelect, selected }: Props) {
               <span
                 className="token-face"
                 style={{
-                  fontSize: "clamp(9px, 1.9vw, 19px)",
+                  fontSize: "clamp(7px, 1.45vw, 15px)",
                   width: "1.45em",
                   height: "1.45em",
                   outline: `${p.id === me ? 3 : 2}px solid ${colorOf(p.id)}`,

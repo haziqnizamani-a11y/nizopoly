@@ -2,9 +2,52 @@
  * Plays thousands of random games against the engine, asserting invariants after
  * every single action. Run with: npm run fuzz
  */
-import { BOARD, GROUPS, HOTEL_SUPPLY, HOUSE_SUPPLY, START_CASH } from "../lib/game/board";
+import {
+  BOARD,
+  GROUPS,
+  HOTEL_SUPPLY,
+  HOUSE_SUPPLY,
+  START_CASH,
+  STATION_TILES,
+  UTILITY_TILES,
+} from "../lib/game/board";
 import { addPlayer, apply, createGame, GameError, startGame, type Action } from "../lib/game/engine";
 import { isOwnable, isProperty, type GameState } from "../lib/game/types";
+
+/** The board must keep the standard shape: 40 tiles, 22 properties, 8 groups. */
+function checkBoardShape() {
+  const count = (kind: string) => BOARD.filter((t) => t.kind === kind).length;
+  const expect = (label: string, got: number, want: number) => {
+    if (got !== want) throw new Error(`board shape: ${label} is ${got}, expected ${want}`);
+  };
+
+  expect("total tiles", BOARD.length, 40);
+  expect("properties", count("property"), 22);
+  expect("stations", count("station"), 4);
+  expect("utilities", count("utility"), 2);
+  expect("chance", count("chance"), 3);
+  expect("community chest", count("chest"), 3);
+  expect("taxes", count("tax"), 2);
+  expect("station tiles listed", STATION_TILES.length, 4);
+  expect("utility tiles listed", UTILITY_TILES.length, 2);
+
+  const sizes = Object.values(GROUPS).map((g) => g.tiles.length).sort();
+  const wanted = [2, 2, 3, 3, 3, 3, 3, 3];
+  if (sizes.join() !== wanted.join()) {
+    throw new Error(`board shape: colour groups are ${sizes.join()}, expected ${wanted.join()}`);
+  }
+
+  const grouped = Object.values(GROUPS).flatMap((g) => g.tiles);
+  if (new Set(grouped).size !== 22) throw new Error("board shape: a property is in two groups");
+  for (const i of grouped) {
+    if (BOARD[i].kind !== "property") throw new Error(`board shape: tile ${i} in a group is not a property`);
+  }
+  for (const t of BOARD) {
+    if (t.kind === "property" && !grouped.includes(t.index)) {
+      throw new Error(`board shape: ${t.name} belongs to no colour group`);
+    }
+  }
+}
 
 function check(s: GameState, note: string) {
   for (const p of s.players) {
@@ -140,11 +183,14 @@ function playGame(seed: number): { turns: number; state: GameState } {
     const owned = Object.values(s.tiles).filter((t) => t.owner).length;
     throw new Error(
       `game failed to terminate: ${steps} accepted actions, ${alive} players alive, ` +
-        `${owned}/17 tiles owned, cash=[${s.players.map((p) => p.cash).join(",")}]`
+        `${owned}/28 tiles owned, cash=[${s.players.map((p) => p.cash).join(",")}]`
     );
   }
   return { turns: steps, state: s };
 }
+
+checkBoardShape();
+console.log("board shape ok — 40 tiles, 22 properties, 4 stations, 2 utilities");
 
 const GAMES = Number(process.argv[2] ?? 400);
 let totalSteps = 0;

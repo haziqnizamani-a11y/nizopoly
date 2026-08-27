@@ -1,12 +1,21 @@
 // Core game types. The whole game state is a single JSON blob that lives in one
 // Postgres row; every mutation goes through the engine server-side.
 
-export type GroupId = "interior" | "hyderabad" | "central" | "uptown" | "premium";
+export type GroupId =
+  | "interior"
+  | "hyderabad"
+  | "oldCity"
+  | "campus"
+  | "nightlife"
+  | "uptown"
+  | "clifton"
+  | "premium";
 
 export type TileKind =
   | "go"
   | "property"
-  | "toll"
+  | "station"
+  | "utility"
   | "chance"
   | "chest"
   | "tax"
@@ -32,8 +41,14 @@ export interface PropertyTile extends BaseTile {
   blurb: string;
 }
 
-export interface TollTile extends BaseTile {
-  kind: "toll";
+export interface StationTile extends BaseTile {
+  kind: "station";
+  price: number;
+  blurb: string;
+}
+
+export interface UtilityTile extends BaseTile {
+  kind: "utility";
   price: number;
   blurb: string;
 }
@@ -43,20 +58,23 @@ export interface TaxTile extends BaseTile {
   amount: number;
 }
 
-export type Tile = BaseTile | PropertyTile | TollTile | TaxTile;
+export type Tile = BaseTile | PropertyTile | StationTile | UtilityTile | TaxTile;
 
 export function isProperty(t: Tile): t is PropertyTile {
   return t.kind === "property";
 }
-export function isToll(t: Tile): t is TollTile {
-  return t.kind === "toll";
+export function isStation(t: Tile): t is StationTile {
+  return t.kind === "station";
+}
+export function isUtility(t: Tile): t is UtilityTile {
+  return t.kind === "utility";
 }
 export function isTax(t: Tile): t is TaxTile {
   return t.kind === "tax";
 }
 /** Anything a player can own. */
-export function isOwnable(t: Tile): t is PropertyTile | TollTile {
-  return t.kind === "property" || t.kind === "toll";
+export function isOwnable(t: Tile): t is PropertyTile | StationTile | UtilityTile {
+  return t.kind === "property" || t.kind === "station" || t.kind === "utility";
 }
 
 export interface Token {
@@ -85,7 +103,7 @@ export interface Card {
 export interface OwnedState {
   /** Player id, or null if the bank still holds it. */
   owner: string | null;
-  /** 0-4 = houses, 5 = hotel. Always 0 for toll roads. */
+  /** 0-4 = houses, 5 = hotel. Always 0 for stations and utilities. */
   houses: number;
   mortgaged: boolean;
 }
@@ -127,8 +145,15 @@ export interface LogEntry {
   text: string;
 }
 
+/**
+ * Bumped whenever the board layout changes, because stored tile indices and
+ * positions become meaningless. Rooms on an older version are refused rather
+ * than silently misread.
+ */
+export const BOARD_VERSION = 2;
+
 export interface GameState {
-  version: 1;
+  version: typeof BOARD_VERSION;
   phase: "lobby" | "playing" | "ended";
   hostId: string;
   players: Player[];

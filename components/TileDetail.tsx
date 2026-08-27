@@ -1,8 +1,16 @@
 "use client";
 
-import { GROUPS, TOLL_TILES, money, tile } from "@/lib/game/board";
+import {
+  GROUPS,
+  STATION_RENT,
+  STATION_TILES,
+  UTILITY_MULTIPLIER,
+  UTILITY_TILES,
+  money,
+  tile,
+} from "@/lib/game/board";
 import { hasGroup, rentFor } from "@/lib/game/engine";
-import { isProperty, isToll, type GameState } from "@/lib/game/types";
+import { isOwnable, isProperty, isStation, isUtility, type GameState } from "@/lib/game/types";
 import type { RoomAction } from "@/lib/server/rooms";
 import { sound } from "@/lib/client/sound";
 
@@ -27,7 +35,13 @@ export function TileDetail({ state, index, me, busy, send, onClose }: Props) {
         <div className="min-w-0">
           <div className="truncate text-base font-bold">{t.name}</div>
           <div className="label">
-            {isProperty(t) ? GROUPS[t.group].name : isToll(t) ? "Toll road" : t.kind}
+            {isProperty(t)
+              ? GROUPS[t.group].name
+              : isStation(t)
+                ? "Station"
+                : isUtility(t)
+                  ? "Utility"
+                  : t.kind}
           </div>
         </div>
         <button className="btn btn-ghost px-2 py-1" onClick={onClose} aria-label="Close">
@@ -52,7 +66,7 @@ export function TileDetail({ state, index, me, busy, send, onClose }: Props) {
             Owned by <span className="font-semibold">{owner.name}</span>
             {own?.mortgaged && <span className="text-[var(--danger)]"> · mortgaged</span>}
           </>
-        ) : isProperty(t) || isToll(t) ? (
+        ) : isOwnable(t) ? (
           <span className="text-[var(--ink-soft)]">Unowned · {money(t.price)}</span>
         ) : (
           <span className="text-[var(--ink-soft)]">Not a property.</span>
@@ -61,19 +75,50 @@ export function TileDetail({ state, index, me, busy, send, onClose }: Props) {
 
       {isProperty(t) && <RentTable state={state} index={index} />}
 
-      {isToll(t) && (
+      {isStation(t) && (
+        <div className="mb-2 overflow-hidden rounded-lg border border-[var(--line)] text-xs">
+          {[1, 2, 3, 4].map((n) => {
+            const held = owner
+              ? STATION_TILES.filter((i) => state.tiles[i]?.owner === owner.id).length
+              : 0;
+            return (
+              <div
+                key={n}
+                className="flex justify-between px-2 py-1"
+                style={{
+                  background:
+                    n === held
+                      ? "color-mix(in srgb, var(--accent) 16%, transparent)"
+                      : n % 2
+                        ? "var(--surface-2)"
+                        : "transparent",
+                  fontWeight: n === held ? 700 : 400,
+                }}
+              >
+                <span>
+                  {n} station{n > 1 ? "s" : ""} owned
+                </span>
+                <span>{money(STATION_RENT[n])}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {isUtility(t) && (
         <div className="mb-2 text-sm text-[var(--ink-soft)]">
-          Rent is your roll × 100, or × 250 if one player holds both toll roads.
+          Rent is your roll × {UTILITY_MULTIPLIER.one}, or × {UTILITY_MULTIPLIER.both} if one
+          player holds both utilities.
           {owner && (
             <div className="mt-1 text-[var(--ink)]">
               {owner.name} holds{" "}
-              {TOLL_TILES.filter((i) => state.tiles[i]?.owner === owner.id).length} of 2.
+              {UTILITY_TILES.filter((i) => state.tiles[i]?.owner === owner.id).length} of 2.
             </div>
           )}
         </div>
       )}
 
-      {mine && (isProperty(t) || isToll(t)) && (
+      {mine && isOwnable(t) && (
         <ManageButtons state={state} index={index} busy={busy} send={send} />
       )}
     </div>
@@ -144,7 +189,8 @@ function ManageButtons({
     own.houses < 5 &&
     hasGroup(state, own.owner ?? "", t.group) &&
     GROUPS[t.group].tiles.every((i) => !state.tiles[i]?.mortgaged);
-  const unmortgageCost = Math.ceil(((isProperty(t) || isToll(t) ? t.price : 0) / 2) * 1.1);
+  const price = isOwnable(t) ? t.price : 0;
+  const unmortgageCost = Math.ceil((price / 2) * 1.1);
 
   return (
     <div className="grid grid-cols-2 gap-2">
@@ -183,7 +229,7 @@ function ManageButtons({
           disabled={busy || own.houses > 0}
           onClick={() => send({ type: "mortgage", tile: index })}
         >
-          Mortgage · +{money(Math.floor((isProperty(t) || isToll(t) ? t.price : 0) / 2))}
+          Mortgage · +{money(Math.floor(price / 2))}
         </button>
       )}
       {isProperty(t) && !hasGroup(state, own.owner ?? "", t.group) && (

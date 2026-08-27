@@ -9,18 +9,25 @@ property-trading formula.
 
 ## The board
 
-28 tiles, seven a side. Fifteen properties in five groups, plus two toll roads.
+A standard 40-tile board: 22 properties in eight colour groups, four stations,
+two utilities, four corners, three Chance, three Community Chest and two taxes.
 
 | Group | Tiles |
 | --- | --- |
-| Interior Sindh | Matli, Tando Soomro, Das Numbri |
-| Hyderabad | Qasimabad, Nizamani Complex, Muslim Society |
-| Karachi Central | IBA Apartments, Triggy, Shanghai Social |
-| Uptown | Flamingo, Zamzama, Clifton Block 5 |
-| Premium | Sea View, D.H.A Phase 8, Nizamani Orchards |
+| Interior Sindh | Matli, Tando Soomro |
+| Hyderabad | Jam Shoro, Das Numbri, Qasimabad |
+| Old Karachi | Nizamani Complex, Muslim Society, Shareef Biryani |
+| Campus & Cafes | IBA Apartments, Triggy, Gogo's |
+| Nightlife | Greeno, Mirchilli, Shanghai Social |
+| Uptown | Flamingo, Dolmen Mall, Bon Vista |
+| Clifton | Zamzama, Clifton Block 5, Boat Basin |
+| Premium | D.H.A Phase 8, Nizamani Orchards |
 
-**Toll roads** — Autobahn and Neher-e-Khayyam. Rent is your dice roll × 100, or
-× 250 if one player holds both.
+**Stations** — Sea View, Autobahn, Daewoo, Shahrah-e-Bhutto. Rent is
+Rs 250 / 500 / 1,000 / 2,000 depending on how many the owner holds.
+
+**Utilities** — K-Electric and WAPDA. Rent is your roll x 40, or x 100 if one
+player holds both.
 
 **Card decks** — *Karachi Traffic* (movement, 16 cards) and *Family Business*
 (money, 16 cards). Both piles sit in the middle of the board and show how many
@@ -28,9 +35,10 @@ cards are left; tap one to read the whole deck.
 
 **Tokens** — Haziq, Sana, Chai, Kiki, a mango and a rickshaw.
 
-Everything above lives in [`lib/game/board.ts`](lib/game/board.ts) and
-[`lib/game/cards.ts`](lib/game/cards.ts). Renaming a tile or rewriting a card is
-a one-line edit; prices and rents are plain numbers in the same file.
+Prices and rents are the classic tables scaled 10x into rupees, so the original
+game's balance carries over. Everything lives in
+[`lib/game/board.ts`](lib/game/board.ts) and
+[`lib/game/cards.ts`](lib/game/cards.ts) — renaming a tile is a one-line edit.
 
 ## House rules worth knowing
 
@@ -38,7 +46,7 @@ a one-line edit; prices and rents are plain numbers in the same file.
 - Taxes and fines go into the Free Parking pot, and whoever lands there takes it.
 - Declining a purchase leaves the tile with the bank. There is no auction.
 - A full group doubles the base rent before any houses go up.
-- Building is even across a group, and the bank holds 24 houses and 8 hotels.
+- Building is even across a group, and the bank holds 32 houses and 12 hotels.
 
 ## Running it
 
@@ -117,7 +125,9 @@ secret that the server checks before accepting a move.
 npm run fuzz 300
 ```
 
-Plays hundreds of random games, asserting after *every* action that nobody holds
+Plays hundreds of random games. It first asserts the board still has the
+standard shape — 40 tiles, 22 properties, colour groups of 2/3/3/3/3/3/3/2, four
+stations, two utilities — then asserts after *every* action that nobody holds
 negative cash, buildings stay even across a group, no group with buildings is
 split between owners, the house and hotel supply is respected, and the turn
 never lands on a bankrupt player. Illegal moves are expected — the engine
