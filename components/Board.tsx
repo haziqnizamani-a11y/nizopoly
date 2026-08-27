@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BOARD, GROUPS, TOKENS, money } from "@/lib/game/board";
 import { useAnimatedPositions } from "@/lib/client/useAnimatedPositions";
+import { sound } from "@/lib/client/sound";
 import { CardDecks, DeckViewer, DECK_META, type DeckId } from "./CardDecks";
 import { isOwnable, isProperty, isTax, isToll, type GameState, type Tile } from "@/lib/game/types";
 import { PLAYER_COLORS } from "./PlayerList";
@@ -41,7 +42,7 @@ interface Props {
 }
 
 export function Board({ state, me, onSelect, selected }: Props) {
-  const animated = useAnimatedPositions(state);
+  const animated = useAnimatedPositions(state, (kind) => sound.play(kind));
   const [deckOpen, setDeckOpen] = useState<DeckId | null>(null);
   const colorOf = (id: string) => {
     const i = state.players.findIndex((p) => p.id === id);
@@ -272,6 +273,8 @@ function Dice({ roll }: { roll: [number, number] | null }) {
     seen.current = key;
     // Don't replay a finished roll just because we loaded the page.
     if (firstSight) return;
+
+    sound.play("dice");
 
     // Kicks off the tumble; the interval is the external system here.
      

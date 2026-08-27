@@ -4,6 +4,7 @@ import { GROUPS, TOLL_TILES, money, tile } from "@/lib/game/board";
 import { hasGroup, rentFor } from "@/lib/game/engine";
 import { isProperty, isToll, type GameState } from "@/lib/game/types";
 import type { RoomAction } from "@/lib/server/rooms";
+import { sound } from "@/lib/client/sound";
 
 interface Props {
   state: GameState;
@@ -152,7 +153,10 @@ function ManageButtons({
           <button
             className="btn"
             disabled={busy || !canBuild}
-            onClick={() => send({ type: "build", tile: index })}
+            onClick={() => {
+              sound.play("build");
+              send({ type: "build", tile: index });
+            }}
           >
             🏠 Build {money(t.houseCost)}
           </button>

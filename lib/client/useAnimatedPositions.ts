@@ -7,10 +7,14 @@ import type { GameState } from "../game/types";
 /** Anything further back than this is treated as a "go back N" card, not a lap. */
 const BACKWARD_WINDOW = 5;
 
+/**
+ * Time per tile. Slow enough to follow a token around the board; long moves
+ * speed up so a 12-tile roll doesn't drag, but never so fast you lose track.
+ */
 function stepDelay(distance: number): number {
-  if (distance > 12) return 55;
-  if (distance > 6) return 85;
-  return 115;
+  if (distance > 12) return 170;
+  if (distance > 6) return 220;
+  return 280;
 }
 
 export interface AnimatedToken {
@@ -25,7 +29,13 @@ export interface AnimatedToken {
  * The walk machinery lives in refs because it is driven by timers, but nothing
  * reads those refs during render: every mutation publishes to state instead.
  */
-export function useAnimatedPositions(state: GameState | null): Record<string, AnimatedToken> {
+export function useAnimatedPositions(
+  state: GameState | null,
+  onStep?: (kind: "step" | "land") => void
+): Record<string, AnimatedToken> {
+  // Kept in a ref so changing the callback doesn't restart running walks.
+  const stepCb = useRef(onStep);
+
   const [display, setDisplay] = useState<Record<string, AnimatedToken>>({});
   const positions = useRef<Map<string, number>>(new Map());
   const moving = useRef<Set<string>>(new Set());
@@ -64,9 +74,11 @@ export function useAnimatedPositions(state: GameState | null): Record<string, An
       if (remaining <= 0) {
         moving.current.delete(id);
         timers.current.delete(id);
+        stepCb.current?.("land");
         publish();
         return;
       }
+      stepCb.current?.("step");
       publish();
       timers.current.set(id, window.setTimeout(() => advanceRef.current(id), stepDelay(remaining)));
     },
@@ -75,7 +87,8 @@ export function useAnimatedPositions(state: GameState | null): Record<string, An
 
   useEffect(() => {
     advanceRef.current = advance;
-  }, [advance]);
+    stepCb.current = onStep;
+  }, [advance, onStep]);
 
   useEffect(() => {
     if (!state) return;

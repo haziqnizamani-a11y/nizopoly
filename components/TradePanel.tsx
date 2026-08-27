@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { BOARD, money, tile } from "@/lib/game/board";
 import { isOwnable, type GameState } from "@/lib/game/types";
 import type { RoomAction } from "@/lib/server/rooms";
+import { sound } from "@/lib/client/sound";
 
 interface Props {
   state: GameState;
@@ -44,6 +45,7 @@ export function TradePanel({ state, me, busy, send }: Props) {
 
   const propose = () => {
     if (!withId) return;
+    sound.play("trade");
     send({ type: "proposeTrade", to: withId, giveTiles: give, giveCash, wantTiles: want, wantCash });
     reset();
     setOpen(false);

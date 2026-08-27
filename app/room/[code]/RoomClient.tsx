@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Board } from "@/components/Board";
 import { Confetti } from "@/components/Confetti";
+import { MuteButton } from "@/components/MuteButton";
 import { Controls } from "@/components/Controls";
 import { Lobby } from "@/components/Lobby";
 import { LogPanel } from "@/components/LogPanel";
@@ -14,6 +15,8 @@ import { money } from "@/lib/game/board";
 import { netWorth } from "@/lib/game/engine";
 import { recallName, saveSession } from "@/lib/client/session";
 import { useRoom } from "@/lib/client/useRoom";
+import { useGameSounds } from "@/lib/client/useGameSounds";
+import { primeAudioOnFirstGesture, sound } from "@/lib/client/sound";
 
 export function RoomClient({ code }: { code: string }) {
   const router = useRouter();
@@ -21,6 +24,9 @@ export function RoomClient({ code }: { code: string }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [joining, setJoining] = useState(false);
   const [name, setName] = useState("");
+
+  useGameSounds(state, me);
+  useEffect(() => primeAudioOnFirstGesture(), []);
 
   // Recalls the last-used name from localStorage after mount.
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -121,7 +127,10 @@ export function RoomClient({ code }: { code: string }) {
     <main className="mx-auto w-full max-w-6xl p-3 lg:p-5">
       <header className="mb-3 flex items-center justify-between gap-3">
         <h1 className="text-xl font-black tracking-tight text-[var(--accent)]">NIZOPOLY</h1>
-        <span className="label">Room {code}</span>
+        <div className="flex items-center gap-2">
+          <span className="label">Room {code}</span>
+          <MuteButton />
+        </div>
       </header>
 
       {winner && <Confetti />}
@@ -177,6 +186,7 @@ function Centered({ children }: { children: React.ReactNode }) {
 function ErrorToast({ error, onDismiss }: { error: string | null; onDismiss: () => void }) {
   useEffect(() => {
     if (!error) return;
+    sound.play("error");
     const id = window.setTimeout(onDismiss, 4000);
     return () => window.clearTimeout(id);
   }, [error, onDismiss]);
