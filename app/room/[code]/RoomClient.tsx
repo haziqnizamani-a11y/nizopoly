@@ -4,15 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Board } from "@/components/Board";
 import { Confetti } from "@/components/Confetti";
+import { GameOver } from "@/components/GameOver";
 import { MoneyBar } from "@/components/MoneyBar";
+import { MyProperties } from "@/components/MyProperties";
 import { Controls } from "@/components/Controls";
 import { Lobby } from "@/components/Lobby";
 import { LogPanel } from "@/components/LogPanel";
 import { PlayerList } from "@/components/PlayerList";
 import { TileDetail } from "@/components/TileDetail";
 import { TradePanel } from "@/components/TradePanel";
-import { money } from "@/lib/game/board";
-import { netWorth } from "@/lib/game/engine";
 import { recallName, saveSession } from "@/lib/client/session";
 import { useRoom } from "@/lib/client/useRoom";
 import { useGameSounds } from "@/lib/client/useGameSounds";
@@ -134,17 +134,7 @@ export function RoomClient({ code }: { code: string }) {
 
       {winner && <Confetti />}
 
-      {winner && (
-        <div className="card card-in mb-3 border-[var(--gold)] p-4 text-center">
-          <div className="text-2xl font-black">🏆 {winner.name} wins</div>
-          <div className="text-sm text-[var(--ink-soft)]">
-            Final net worth {money(netWorth(state, winner.id))}
-          </div>
-          <button className="btn mt-3" onClick={() => router.push("/")}>
-            New game
-          </button>
-        </div>
-      )}
+      {winner && <GameOver state={state} me={me} onNewGame={() => router.push("/")} />}
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_21rem]">
         <div className="board-scroll mx-auto w-full min-w-0" style={{ maxWidth: "min(100%, 54rem)" }}>
@@ -161,6 +151,15 @@ export function RoomClient({ code }: { code: string }) {
               busy={busy}
               send={send}
               onClose={() => setSelected(null)}
+            />
+          )}
+          {me && (
+            <MyProperties
+              state={state}
+              me={me}
+              busy={busy}
+              send={send}
+              urgent={state.pendingDebt?.playerId === me}
             />
           )}
           <PlayerList state={state} me={me} />

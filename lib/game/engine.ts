@@ -806,6 +806,7 @@ function doBankrupt(s: GameState, playerId: string) {
   const pot = p.cash + salvage;
   p.cash = 0;
   p.bankrupt = true;
+  p.bankruptAt = s.players.reduce((max, x) => Math.max(max, x.bankruptAt ?? 0), 0) + 1;
   s.pendingDebt = null;
   credit(s, creditorId, pot);
 
@@ -827,6 +828,27 @@ function checkGameOver(s: GameState) {
     s.winnerId = alive[0]?.id ?? null;
     if (alive[0]) log(s, `${alive[0].name} wins.`);
   }
+}
+
+/**
+ * Final placings. The survivor wins; everyone else is ranked by how long they
+ * lasted, so the last player to go bust comes second. Net worth breaks ties and
+ * covers games from before bankruptcy order was recorded.
+ */
+export function standings(s: GameState): { player: Player; place: number; worth: number }[] {
+  const ranked = [...s.players].sort((a, b) => {
+    if (a.bankrupt !== b.bankrupt) return a.bankrupt ? 1 : -1;
+    if (a.bankrupt && b.bankrupt) {
+      const byOrder = (b.bankruptAt ?? 0) - (a.bankruptAt ?? 0);
+      if (byOrder !== 0) return byOrder;
+    }
+    return netWorth(s, b.id) - netWorth(s, a.id);
+  });
+  return ranked.map((player, i) => ({
+    player,
+    place: i + 1,
+    worth: player.bankrupt ? 0 : netWorth(s, player.id),
+  }));
 }
 
 // ---------------------------------------------------------------- misc

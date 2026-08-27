@@ -187,6 +187,30 @@ body {
   background: var(--surface-2);
 }
 
+/*
+ * Owner marker: the owning player's piece, pinned to the tile's top-left.
+ * Deliberately smaller, squarer and un-shadowed compared with a moving token,
+ * so "owns this" never reads as "is standing here".
+ */
+.owner-badge {
+  position: absolute;
+  /* Sits just below the group colour bar so it never covers it. */
+  top: 16%;
+  left: 1px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 34%;
+  max-width: 20px;
+  aspect-ratio: 1;
+  border: 1.5px solid;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  font-size: clamp(7px, 20cqi, 13px);
+  line-height: 1;
+  pointer-events: none;
+}
+
 /* Token layer sits inside the 2px border so percentages line up with cells. */
 .token-layer {
   position: absolute;

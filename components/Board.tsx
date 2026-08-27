@@ -111,11 +111,23 @@ export function Board({ state, me, onSelect, selected }: Props) {
               )}
 
               {owner && (
-                <div
-                  className="pointer-events-none absolute inset-x-0 bottom-0 h-[4px]"
-                  style={{ background: colorOf(owner.id) }}
-                  title={`Owned by ${owner.name}`}
-                />
+                <>
+                  {/* Colour bar stays as a second, non-colour-blind-hostile signal. */}
+                  <div
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-[4px]"
+                    style={{ background: colorOf(owner.id) }}
+                  />
+                  {/* The owner's actual piece, so you can see at a glance whose
+                      it is. Smaller and flatter than a moving token, and pinned
+                      to the corner, so it never reads as "standing here". */}
+                  <span
+                    className="owner-badge"
+                    style={{ borderColor: colorOf(owner.id) }}
+                    title={`Owned by ${owner.name}`}
+                  >
+                    {(TOKENS.find((t) => t.id === owner.tokenId) ?? TOKENS[0]).emoji}
+                  </span>
+                </>
               )}
 
               <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-[1px] px-[1px]">

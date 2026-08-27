@@ -119,6 +119,12 @@ export interface Player {
   jailTurns: number;
   getOutOfJailCards: number;
   bankrupt: boolean;
+  /**
+   * Order in which players went bust, 1 = first out. Drives final placings:
+   * surviving longer is a better result. Absent on games started before this
+   * was tracked, in which case ranking falls back to net worth.
+   */
+  bankruptAt?: number;
   connected: boolean;
 }
 
