@@ -178,6 +178,19 @@ export interface GameState {
   pendingDebt: { playerId: string; amount: number; creditorId: string | null } | null;
   /** Most recent card drawn, kept so the UI can show it. */
   lastCard: { deck: "chance" | "chest"; text: string } | null;
+  /**
+   * Most recent rent collected, so the owner can be told they were paid rather
+   * than having to spot it in the log. Optional: games started before this was
+   * added simply never show the notice.
+   */
+  lastRent?: {
+    fromName: string;
+    toId: string;
+    toName: string;
+    amount: number;
+    tile: string;
+    seq: number;
+  } | null;
   tiles: Record<number, OwnedState>;
   chanceOrder: string[];
   chestOrder: string[];

@@ -81,6 +81,7 @@ export function createGame(hostId: string, hostName: string, seed: number): Game
     pendingPurchase: null,
     pendingDebt: null,
     lastCard: null,
+    lastRent: null,
     tiles: {},
     chanceOrder: s1.items,
     chestOrder: s2.items,
@@ -292,7 +293,20 @@ function trySettleDebt(s: GameState) {
   p.cash -= debt.amount;
   credit(s, debt.creditorId, debt.amount);
   s.pendingDebt = null;
-  log(s, `${p.name} settled ${money(debt.amount)}.`);
+  if (debt.creditorId) {
+    const creditor = playerById(s, debt.creditorId);
+    log(s, `${p.name} settled ${money(debt.amount)} with ${creditor.name}.`);
+    s.lastRent = {
+      fromName: p.name,
+      toId: creditor.id,
+      toName: creditor.name,
+      amount: debt.amount,
+      tile: "a debt",
+      seq: s.seq,
+    };
+  } else {
+    log(s, `${p.name} settled ${money(debt.amount)}.`);
+  }
 }
 
 // ---------------------------------------------------------------- movement
@@ -340,8 +354,22 @@ function landOn(s: GameState, p: Player) {
       return;
     }
     const rent = rentFor(s, p.position, diceTotal);
-    log(s, `${p.name} pays ${money(rent)} rent on ${t.name}.`);
+    const owner = playerById(s, st.owner);
     pay(s, p.id, rent, st.owner);
+    // pay() logs the shortfall itself, so only claim it was paid when it was.
+    if (!s.pendingDebt) {
+      log(s, `${p.name} paid ${money(rent)} rent to ${owner.name} for ${t.name}.`);
+      s.lastRent = {
+        fromName: p.name,
+        toId: owner.id,
+        toName: owner.name,
+        amount: rent,
+        tile: t.name,
+        seq: s.seq,
+      };
+    } else {
+      log(s, `${p.name} owes ${owner.name} ${money(rent)} for ${t.name}.`);
+    }
     return;
   }
 

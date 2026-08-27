@@ -11,6 +11,7 @@ import { Controls } from "@/components/Controls";
 import { Lobby } from "@/components/Lobby";
 import { LogPanel } from "@/components/LogPanel";
 import { PlayerList } from "@/components/PlayerList";
+import { RentToast } from "@/components/RentToast";
 import { TileDetail } from "@/components/TileDetail";
 import { TradePanel } from "@/components/TradePanel";
 import { recallName, saveSession } from "@/lib/client/session";
@@ -168,6 +169,7 @@ export function RoomClient({ code }: { code: string }) {
         </aside>
       </div>
 
+      <RentToast state={state} me={me} />
       <ErrorToast error={error} onDismiss={dismissError} />
     </main>
   );

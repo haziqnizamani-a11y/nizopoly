@@ -283,10 +283,18 @@ function Dice({ roll }: { roll: [number, number] | null }) {
   const d0 = roll?.[0] ?? null;
   const d1 = roll?.[1] ?? null;
   const seen = useRef<string | null>(null);
+  /*
+   * Ending a turn clears lastRoll, so "have we seen a roll before" cannot be
+   * inferred from `seen` alone: that reset made the first roll of every turn
+   * look like a page load, and the dice never made a sound. Track the mount
+   * itself, which is the only case that should stay silent.
+   */
+  const mounted = useRef(false);
 
   useEffect(() => {
     if (d0 === null || d1 === null) {
       seen.current = null;
+      mounted.current = true;
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setRolling(false);
       return;
@@ -294,10 +302,11 @@ function Dice({ roll }: { roll: [number, number] | null }) {
 
     const key = `${d0}:${d1}`;
     if (seen.current === key) return;
-    const firstSight = seen.current === null;
+    // Only stay silent when the page loaded with a roll already on the table.
+    const onPageLoad = !mounted.current;
+    mounted.current = true;
     seen.current = key;
-    // Don't replay a finished roll just because we loaded the page.
-    if (firstSight) return;
+    if (onPageLoad) return;
 
     sound.play("dice");
 
