@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Board } from "@/components/Board";
 import { Confetti } from "@/components/Confetti";
-import { MuteButton } from "@/components/MuteButton";
+import { MoneyBar } from "@/components/MoneyBar";
 import { Controls } from "@/components/Controls";
 import { Lobby } from "@/components/Lobby";
 import { LogPanel } from "@/components/LogPanel";
@@ -127,11 +127,10 @@ export function RoomClient({ code }: { code: string }) {
     <main className="mx-auto w-full max-w-6xl p-3 lg:p-5">
       <header className="mb-3 flex items-center justify-between gap-3">
         <h1 className="text-xl font-black tracking-tight text-[var(--accent)]">NIZOPOLY</h1>
-        <div className="flex items-center gap-2">
-          <span className="label">Room {code}</span>
-          <MuteButton />
-        </div>
+        <span className="label">Room {code}</span>
       </header>
+
+      <MoneyBar state={state} me={me} />
 
       {winner && <Confetti />}
 
@@ -148,7 +147,7 @@ export function RoomClient({ code }: { code: string }) {
       )}
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_21rem]">
-        <div className="mx-auto w-full min-w-0" style={{ maxWidth: "min(100%, 54rem)" }}>
+        <div className="board-scroll mx-auto w-full min-w-0" style={{ maxWidth: "min(100%, 54rem)" }}>
           <Board state={state} me={me} selected={selected} onSelect={setSelected} />
         </div>
 

@@ -139,6 +139,23 @@ body {
 .board-wrap {
   position: relative;
 }
+
+/*
+ * A 40-tile board fitted to a 375px phone gives ~32px per tile, at which no
+ * font size makes a name like "Qasimabad" legible. So on small screens the
+ * board is rendered at a readable size and panned instead of shrunk.
+ */
+.board-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+@media (max-width: 700px) {
+  .board-scroll > .board-wrap {
+    min-width: 34rem;
+  }
+}
 .board-grid {
   display: grid;
   grid-template-columns: repeat(11, 1fr);
@@ -417,19 +434,49 @@ body {
 .slide-in {
   animation: slide-in 0.25s ease-out;
 }
-/* cqi is a percentage of the tile's own width, so these need double digits. */
+/*
+ * cqi is a percentage of the tile's own width, so these need double digits.
+ * The floor is what matters on a phone: 40 tiles across a 375px screen leaves
+ * each tile ~33px, so the name gets a hard minimum and the price line is
+ * dropped entirely rather than shrunk into illegibility.
+ */
 .tile-name {
-  font-size: clamp(5px, 12cqi, 12px);
-  font-weight: 650;
-  line-height: 1.05;
+  font-size: clamp(8px, 14cqi, 13px);
+  font-weight: 700;
+  line-height: 1.08;
   overflow: hidden;
   word-break: break-word;
   hyphens: auto;
 }
 .tile-sub {
-  font-size: clamp(4px, 9cqi, 9px);
+  font-size: clamp(7px, 10cqi, 10px);
   color: var(--ink-soft);
   line-height: 1;
+}
+
+.tile-icon {
+  font-size: clamp(9px, 16cqi, 15px);
+  line-height: 1;
+}
+.tile-icon-corner {
+  font-size: clamp(11px, 22cqi, 20px);
+  line-height: 1;
+}
+
+/* Below these widths the extras stop fitting; tap a tile to see its detail. */
+@container (max-width: 58px) {
+  .tile-sub {
+    display: none;
+  }
+}
+@container (max-width: 48px) {
+  .tile-icon {
+    display: none;
+  }
+  .tile-name {
+    font-size: 8.5px;
+    letter-spacing: -0.01em;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

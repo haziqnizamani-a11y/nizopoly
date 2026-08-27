@@ -36,8 +36,8 @@ export function tilePos(i: number): { row: number; col: number } {
 const CORNER_LABEL: Record<number, { title: string; icon: string }> = {
   0: { title: "GO", icon: "→" },
   10: { title: "Jail", icon: "🔒" },
-  20: { title: "Free Parking", icon: "🅿️" },
-  30: { title: "Go To Jail", icon: "🚨" },
+  20: { title: "Free", icon: "🅿️" },
+  30: { title: "Go Jail", icon: "🚨" },
 };
 
 function groupColor(t: Tile): string | null {
@@ -121,7 +121,7 @@ export function Board({ state, me, onSelect, selected }: Props) {
               <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-[1px] px-[1px]">
                 {corner ? (
                   <>
-                    <span className="text-[clamp(10px,3cqi,20px)] leading-none">{corner.icon}</span>
+                    <span className="tile-icon-corner">{corner.icon}</span>
                     <span className="tile-name">{corner.title}</span>
                   </>
                 ) : (
@@ -129,13 +129,11 @@ export function Board({ state, me, onSelect, selected }: Props) {
                     <span className="tile-name">{t.short ?? t.name}</span>
                     {isOwnable(t) && !owner && <span className="tile-sub">{money(t.price)}</span>}
                     {isTax(t) && <span className="tile-sub">{money(t.amount)}</span>}
-                    {t.kind === "chance" && <span className="text-[clamp(8px,2.4cqi,16px)]">🚗</span>}
-                    {t.kind === "chest" && <span className="text-[clamp(8px,2.4cqi,16px)]">🥭</span>}
-                    {isStation(t) && <span className="text-[clamp(8px,2.4cqi,16px)]">🚌</span>}
+                    {t.kind === "chance" && <span className="tile-icon">🚗</span>}
+                    {t.kind === "chest" && <span className="tile-icon">🥭</span>}
+                    {isStation(t) && <span className="tile-icon">🚌</span>}
                     {isUtility(t) && (
-                      <span className="text-[clamp(8px,2.4cqi,16px)]">
-                        {t.index === 12 ? "💡" : "🚰"}
-                      </span>
+                      <span className="tile-icon">{t.index === 12 ? "💡" : "🚰"}</span>
                     )}
                   </>
                 )}
