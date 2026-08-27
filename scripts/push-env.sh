@@ -43,23 +43,38 @@ fi
 
 # Production only. `vercel env add <name> preview` needs a branch argument in
 # non-interactive mode, and a failure there used to abort before the deploy.
+#
+# `vercel env add` refuses to overwrite, so an existing value must be removed
+# first. That leaves a window where production has no key at all, so if the add
+# then fails we restore the old value rather than leaving the site broken.
 echo
 failed=0
 for name in "${VARS[@]}"; do
   value="$(read_var "$name")"
+
+  previous="$(vercel env pull /dev/stdout --environment=production 2>/dev/null \
+    | grep -E "^$name=" | head -1 | cut -d= -f2- | tr -d '"')"
+
   vercel env rm "$name" production --yes >/dev/null 2>&1
   if printf '%s' "$value" | vercel env add "$name" production >/dev/null 2>&1; then
     echo "  set $name"
   else
     echo "  FAILED to set $name"
     failed=1
+    if [ -n "$previous" ]; then
+      if printf '%s' "$previous" | vercel env add "$name" production >/dev/null 2>&1; then
+        echo "  restored the previous value of $name"
+      else
+        echo "  !! $name is now MISSING on Vercel — set it in the dashboard now"
+      fi
+    fi
   fi
 done
 
 if [ "$failed" -ne 0 ]; then
   echo
   echo "Could not set every variable — not deploying, since a partial"
-  echo "configuration would 503 for players. Set them in the Vercel dashboard."
+  echo "configuration would 503 for players."
   exit 1
 fi
 
