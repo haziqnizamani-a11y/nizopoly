@@ -7,7 +7,11 @@
  * actions. Full spec: hex values, radii, shadows and motion are copied
  * verbatim from that document.
  */
+/* Light only, deliberately: the OS/browser dark preference is ignored so the
+   page never falls back to unstyled or mismatched tokens. */
 :root {
+  color-scheme: light;
+
   /* surfaces */
   --bg: #fcfaf4; /* page (ivory-50) */
   --surface: #ffffff; /* plates / cards */
@@ -67,44 +71,6 @@
    */
   --font-display: Georgia, "Times New Roman", serif;
   --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
-}
-
-/*
- * Dark mode is explicitly out of scope for this handoff (IMPLEMENTATION.md:
- * "Light mode only so far; dark is next") — no art direction pass has been
- * done here. But every token below IS overridden, because "not designed yet"
- * has to stop short of illegible text: several tokens the handoff introduced
- * (--green, --gold-600, --line-hair, --line-strong, ...) have no dark-mode
- * value of their own, and a token with no override just keeps its light-mode
- * value — e.g. --green at #084325 (chosen for use as text/buttons ON ivory)
- * read as near-black on the old dark background. This block is a contrast
- * safety net, not a designed dark register; replace it wholesale once dark
- * gets its own pass.
- */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #171310;
-    --surface: #221c17;
-    --surface-2: #2c241d;
-    --surface-3: #362d24;
-    --ink: #f3e9dc;
-    --ink-soft: #a89684;
-    --ink-faint: #948c7d;
-    --line: #3b3128;
-    --line-hair: rgba(255, 255, 255, 0.1);
-    --line-strong: rgba(255, 255, 255, 0.28);
-    --green: #34a06a;
-    --green-700: #3fb87b;
-    --green-900: #1f6b46;
-    --gold: #e0b44a;
-    --gold-600: #e0b44a;
-    --stone-300: #a79c88;
-    --danger: #d9594c;
-    --accent: var(--gold);
-    --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow-sm: 0 2px 8px rgb(0 0 0 / 0.35);
-    --shadow-md: 0 8px 24px rgb(0 0 0 / 0.35);
-  }
 }
 
 @theme inline {
