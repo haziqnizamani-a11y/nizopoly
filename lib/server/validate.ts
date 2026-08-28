@@ -38,6 +38,7 @@ export function parseAction(raw: unknown): RoomAction {
     case "decline":
     case "payJailFine":
     case "useJailCard":
+    case "passAuction":
     case "endTurn":
     case "bankrupt":
     case "start":
@@ -48,6 +49,9 @@ export function parseAction(raw: unknown): RoomAction {
     case "mortgage":
     case "unmortgage":
       return { type: a.type, tile: tileIndex(a.tile) };
+
+    case "bid":
+      return { type: "bid", amount: cash(a.amount) };
 
     case "setName": {
       const name = String(a.name ?? "").trim().slice(0, 20);

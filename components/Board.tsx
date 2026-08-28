@@ -335,7 +335,13 @@ function BoardCentre({
       )}
 
       {isOwnable(t) &&
-        (owner ? (
+        (state.pendingAuction?.tile === displayIndex ? (
+          <div className="text-sm text-[var(--gold-600)]">
+            {state.pendingAuction.highBidderId
+              ? `Up for auction — ${money(state.pendingAuction.highBid)} bid`
+              : "Up for auction — no bids yet"}
+          </div>
+        ) : owner ? (
           <div className="text-sm">
             <span className="font-semibold">{owner.name}</span> owns it
             {own?.mortgaged && <span style={{ color: "var(--danger)" }}> · mortgaged</span>}

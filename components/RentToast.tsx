@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { money } from "@/lib/game/board";
 import type { GameState } from "@/lib/game/types";
 
@@ -13,13 +13,25 @@ export function RentToast({ state, me }: { state: GameState; me: string | null }
   const mine = rent && rent.toId === me ? rent : null;
   const [shown, setShown] = useState<typeof mine>(null);
 
+  // `state` — and so `state.lastRent` — is a fresh object every poll tick even
+  // when it is the very same stale event (JSON parsing never preserves
+  // identity). Depending on that object kept re-arming the dismiss timer on
+  // every poll, so the banner never actually went away. `seq` is the one
+  // thing that only changes when a genuinely new rent event happens; the
+  // object itself is read from a ref so the effect doesn't need it as a dep.
+  const mineRef = useRef(mine);
   useEffect(() => {
-    if (!mine) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setShown(mine);
+    mineRef.current = mine;
+  });
+  const seq = mine?.seq ?? null;
+
+  useEffect(() => {
+    if (seq === null) return;
+     
+    setShown(mineRef.current);
     const t = window.setTimeout(() => setShown(null), 4000);
     return () => window.clearTimeout(t);
-  }, [mine?.seq, mine]);
+  }, [seq]);
 
   if (!shown) return null;
 

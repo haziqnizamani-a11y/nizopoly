@@ -125,6 +125,12 @@ export function useRoom(code: string): Room {
     [code, accept, refresh]
   );
 
+  // Stable identity: ErrorToast depends on this in a useEffect, and a fresh
+  // function every render — same as a fresh object every poll tick — would
+  // re-arm its dismiss timer (and replay the error sound) on every poll while
+  // an error is showing, instead of once when the error actually appears.
+  const dismissError = useCallback(() => setError(null), []);
+
   return {
     state,
     session,
@@ -133,7 +139,7 @@ export function useRoom(code: string): Room {
     error,
     busy,
     send,
-    dismissError: () => setError(null),
+    dismissError,
     refresh: () => void refresh(),
   };
 }

@@ -23,16 +23,25 @@ export function MoneyBar({ state, me }: { state: GameState; me: string | null })
   const prevCash = useRef<number | null>(null);
   const [delta, setDelta] = useState<number | null>(null);
 
+  // `player` is a fresh object every poll tick even when cash hasn't moved
+  // (JSON parsing never preserves identity), so depending on the object
+  // itself re-ran this effect on every poll — the cleanup from the previous
+  // run cleared the dismiss timer, the guard below then found cash unchanged
+  // and returned early without scheduling a replacement, and the floating
+  // amount got stuck on screen. Depend on the cash figure alone: a genuine
+  // primitive that only changes when there is actually something to show.
+  const playerCash = player?.cash ?? null;
+
   useEffect(() => {
-    if (!player) return;
+    if (playerCash === null) return;
     const before = prevCash.current;
-    prevCash.current = player.cash;
-    if (before === null || before === player.cash) return;
-     
-    setDelta(player.cash - before);
+    prevCash.current = playerCash;
+    if (before === null || before === playerCash) return;
+
+    setDelta(playerCash - before);
     const t = window.setTimeout(() => setDelta(null), 1800);
     return () => window.clearTimeout(t);
-  }, [player?.cash, player]);
+  }, [playerCash]);
 
   if (!player) return null;
 

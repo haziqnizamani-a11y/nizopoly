@@ -32,28 +32,57 @@ function Chip({ children, filled = false }: { children: React.ReactNode; filled?
   );
 }
 
-/** Remembers the last cash figure per player so we can float the delta. */
+/**
+ * Remembers the last cash figure per player so we can float the delta.
+ *
+ * `state` is a fresh object every poll tick even when nothing changed (JSON
+ * parsing never preserves identity), so this effect re-runs constantly. That
+ * used to matter: a single shared timeout meant an unrelated later tick's
+ * cleanup could cancel an in-flight dismiss timer before it fired, with
+ * nothing scheduled to replace it, leaving a floating amount stuck on screen
+ * for whichever player's delta happened to be showing. Each player's dismiss
+ * timer is now independent — tracked in a ref, not tied to this effect's own
+ * cleanup — so an unrelated tick for a different player can no longer cancel
+ * it early.
+ */
 function useCashDeltas(state: GameState): Record<string, { amount: number; key: number }> {
   const prev = useRef<Map<string, number>>(new Map());
+  const timers = useRef<Map<string, number>>(new Map());
   const [deltas, setDeltas] = useState<Record<string, { amount: number; key: number }>>({});
 
   useEffect(() => {
-    const changes: Record<string, { amount: number; key: number }> = {};
     for (const p of state.players) {
       const before = prev.current.get(p.id);
-      if (before !== undefined && before !== p.cash) {
-        changes[p.id] = { amount: p.cash - before, key: state.seq };
-      }
       prev.current.set(p.id, p.cash);
-    }
-    if (Object.keys(changes).length > 0) {
-      // Derives a transient flash from the incoming state change.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDeltas((d) => ({ ...d, ...changes }));
-      const t = window.setTimeout(() => setDeltas({}), 1500);
-      return () => window.clearTimeout(t);
+      if (before === undefined || before === p.cash) continue;
+
+      const amount = p.cash - before;
+       
+      setDeltas((d) => ({ ...d, [p.id]: { amount, key: state.seq } }));
+
+      const existing = timers.current.get(p.id);
+      if (existing) window.clearTimeout(existing);
+      timers.current.set(
+        p.id,
+        window.setTimeout(() => {
+          setDeltas((d) => {
+            const next = { ...d };
+            delete next[p.id];
+            return next;
+          });
+          timers.current.delete(p.id);
+        }, 1500)
+      );
     }
   }, [state]);
+
+  useEffect(() => {
+    const running = timers.current;
+    return () => {
+      for (const t of running.values()) window.clearTimeout(t);
+      running.clear();
+    };
+  }, []);
 
   return deltas;
 }

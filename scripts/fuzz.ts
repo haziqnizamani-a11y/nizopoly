@@ -90,12 +90,50 @@ function check(s: GameState, note: string) {
   if (s.phase === "playing" && s.players[s.turn].bankrupt) {
     throw new Error(`${note}: turn belongs to a bankrupt player`);
   }
+
+  const auction = s.pendingAuction;
+  if (auction) {
+    if (s.turnPhase !== "auction") throw new Error(`${note}: pendingAuction set but turnPhase is ${s.turnPhase}`);
+    if (s.pendingDebt) throw new Error(`${note}: an auction and a debt are pending at once`);
+    if (s.tiles[auction.tile]?.owner) throw new Error(`${note}: auction running on an already-owned tile`);
+    if (auction.highBid < 0) throw new Error(`${note}: negative auction bid`);
+    if (auction.highBid > 0 && !auction.highBidderId) throw new Error(`${note}: a bid with no bidder`);
+    if (auction.highBidderId) {
+      const bidder = s.players.find((p) => p.id === auction.highBidderId);
+      if (!bidder || bidder.bankrupt) throw new Error(`${note}: highBidder is missing or bankrupt`);
+      if (auction.passed.includes(auction.highBidderId)) {
+        throw new Error(`${note}: highBidder is also marked as passed`);
+      }
+    }
+    const active = s.players.filter((p) => !p.bankrupt && !auction.passed.includes(p.id));
+    if (active.length === 0) throw new Error(`${note}: auction stuck open with no active bidders`);
+  } else if (s.turnPhase === "auction") {
+    throw new Error(`${note}: turnPhase is auction but pendingAuction is null`);
+  }
 }
 
 function candidateActions(s: GameState, pid: string): Action[] {
   const acts: Action[] = [];
   const p = s.players.find((x) => x.id === pid)!;
   const isTurn = s.players[s.turn].id === pid;
+
+  // Auctions are the one place any non-bankrupt player may act off-turn —
+  // everyone at the table can bid, not just whoever's turn it nominally is.
+  const auction = s.pendingAuction;
+  if (
+    auction &&
+    s.turnPhase === "auction" &&
+    !p.bankrupt &&
+    !auction.passed.includes(pid) &&
+    pid !== auction.highBidderId
+  ) {
+    const minBid = auction.highBid + 1;
+    if (p.cash >= minBid) {
+      const bump = Math.floor(Math.random() * 500) + 1;
+      acts.push({ type: "bid", amount: Math.min(p.cash, minBid + bump) });
+    }
+    acts.push({ type: "passAuction" });
+  }
 
   if (isTurn && !s.pendingDebt) {
     if (s.turnPhase === "roll") {
@@ -142,6 +180,18 @@ function candidateActions(s: GameState, pid: string): Action[] {
   return acts;
 }
 
+/** During an auction, the actor is a random still-eligible bidder rather than
+ * whoever's turn it nominally is — that's the whole point of an auction. */
+function auctionActor(s: GameState): string | null {
+  const auction = s.pendingAuction;
+  if (!auction || s.turnPhase !== "auction") return null;
+  const eligible = s.players.filter(
+    (p) => !p.bankrupt && !auction.passed.includes(p.id) && p.id !== auction.highBidderId
+  );
+  if (eligible.length === 0) return null;
+  return eligible[Math.floor(Math.random() * eligible.length)].id;
+}
+
 function playGame(seed: number): { turns: number; state: GameState } {
   let s = createGame("p1", "Haziq", seed);
   s = addPlayer(s, "p2", "Sana");
@@ -156,8 +206,9 @@ function playGame(seed: number): { turns: number; state: GameState } {
   const cap = 400_000;
   while (s.phase === "playing" && attempts < cap) {
     attempts++;
-    // The player under pressure acts first, otherwise whoever's turn it is.
-    const actorId = s.pendingDebt?.playerId ?? s.players[s.turn].id;
+    // The player under pressure acts first, then an eligible bidder if an
+    // auction is running, otherwise whoever's turn it is.
+    const actorId = s.pendingDebt?.playerId ?? auctionActor(s) ?? s.players[s.turn].id;
     const acts = candidateActions(s, actorId);
     if (acts.length === 0) {
       // Deadlock guard: a stuck debtor must be able to go bankrupt.

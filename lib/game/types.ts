@@ -132,8 +132,18 @@ export interface Player {
 export type TurnPhase =
   | "roll" // must roll (or pay/use card to leave jail first)
   | "decide_buy" // landed on an unowned tile
+  | "auction" // the tile was declined and is up for bidding
   | "resolve" // card/rent resolved, may manage then end turn
   | "end"; // turn is over, waiting for engine to advance
+
+export interface AuctionState {
+  tile: number;
+  highBid: number;
+  /** null until someone places a bid. */
+  highBidderId: string | null;
+  /** Players out of this auction for good — passing is final. */
+  passed: string[];
+}
 
 export interface TradeOffer {
   id: string;
@@ -171,6 +181,11 @@ export interface GameState {
   lastRoll: [number, number] | null;
   /** Set while turnPhase === "decide_buy". */
   pendingPurchase: number | null;
+  /**
+   * Set while turnPhase === "auction". Optional: games in flight before this
+   * was added simply never have one, same as `lastRent`/`bankruptAt`.
+   */
+  pendingAuction?: AuctionState | null;
   /**
    * A debt the player cannot currently cover. They must mortgage, sell or trade
    * their way out of it, or declare bankruptcy. Blocks the turn until cleared.

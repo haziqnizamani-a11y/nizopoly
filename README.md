@@ -44,7 +44,9 @@ game's balance carries over. Everything lives in
 
 - Starting cash Rs 15,000, Rs 2,000 for passing GO.
 - Taxes and fines go into the Free Parking pot, and whoever lands there takes it.
-- Declining a purchase leaves the tile with the bank. There is no auction.
+- Declining a purchase sends it to auction: any non-bankrupt player, including
+  the one who declined, can bid. Passing on the auction is final for that
+  round. It goes to the highest bidder, or stays with the bank if nobody bids.
 - A full group doubles the base rent before any houses go up.
 - Building is even across a group, and the bank holds 32 houses and 12 hotels.
 

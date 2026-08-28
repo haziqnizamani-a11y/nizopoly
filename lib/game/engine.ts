@@ -51,6 +51,8 @@ export type Action =
   | { type: "sellHouse"; tile: number }
   | { type: "mortgage"; tile: number }
   | { type: "unmortgage"; tile: number }
+  | { type: "bid"; amount: number }
+  | { type: "passAuction" }
   | { type: "endTurn" }
   | {
       type: "proposeTrade";
@@ -79,6 +81,7 @@ export function createGame(hostId: string, hostName: string, seed: number): Game
     doublesCount: 0,
     lastRoll: null,
     pendingPurchase: null,
+    pendingAuction: null,
     pendingDebt: null,
     lastCard: null,
     lastRent: null,
@@ -503,6 +506,12 @@ export function apply(state: GameState, playerId: string, action: Action): GameS
     case "unmortgage":
       doUnmortgage(s, playerId, action.tile);
       break;
+    case "bid":
+      doBid(s, playerId, action.amount);
+      break;
+    case "passAuction":
+      doPassAuction(s, playerId);
+      break;
     case "endTurn":
       doEndTurn(s, playerId);
       break;
@@ -598,12 +607,87 @@ function doBuy(s: GameState, playerId: string) {
 }
 
 function doDecline(s: GameState, playerId: string) {
-  requireTurn(s, playerId);
+  const p = requireTurn(s, playerId);
   if (s.turnPhase !== "decide_buy") fail("Nothing to decline.");
   const index = s.pendingPurchase;
   s.pendingPurchase = null;
+  if (index === null) {
+    s.turnPhase = "resolve";
+    return;
+  }
+  log(s, `${p.name} passed on ${tile(index).name} — up for auction.`);
+  s.turnPhase = "auction";
+  s.pendingAuction = { tile: index, highBid: 0, highBidderId: null, passed: [] };
+}
+
+/**
+ * Auctions are the one place any non-bankrupt player may act regardless of
+ * whose turn it nominally is — everyone at the table can bid, not just the
+ * person who declined to buy at the listed price.
+ */
+function doBid(s: GameState, playerId: string, amount: number) {
+  if (s.phase !== "playing") fail("The game is not running.");
+  const auction = s.pendingAuction;
+  if (!auction || s.turnPhase !== "auction") fail("There is no auction to bid on.");
+  const p = playerById(s, playerId);
+  if (p.bankrupt) fail("You are out of the game.");
+  if (auction.passed.includes(playerId)) fail("You already passed on this one.");
+  if (playerId === auction.highBidderId) fail("You are already the highest bidder.");
+  if (!Number.isInteger(amount) || amount < 1) fail("Bid at least Rs 1.");
+  if (amount <= auction.highBid) fail(`Bid higher than ${money(auction.highBid)}.`);
+  if (amount > p.cash) fail("You cannot bid more than you have.");
+
+  auction.highBid = amount;
+  auction.highBidderId = playerId;
+  log(s, `${p.name} bids ${money(amount)} on ${tile(auction.tile).name}.`);
+  checkAuctionConclusion(s);
+}
+
+function doPassAuction(s: GameState, playerId: string) {
+  if (s.phase !== "playing") fail("The game is not running.");
+  const auction = s.pendingAuction;
+  if (!auction || s.turnPhase !== "auction") fail("There is no auction to pass on.");
+  const p = playerById(s, playerId);
+  if (p.bankrupt) fail("You are out of the game.");
+  if (auction.passed.includes(playerId)) return;
+  if (playerId === auction.highBidderId) fail("You are the highest bidder — you cannot pass.");
+
+  auction.passed.push(playerId);
+  log(s, `${p.name} passes.`);
+  checkAuctionConclusion(s);
+}
+
+/**
+ * Ends the auction once at most one bidder is still undecided. A lone
+ * remaining player who has never bid is not auto-concluded against — they get
+ * a genuine last look (bid anything, or pass and let it go to the bank)
+ * rather than being force-awarded or force-skipped.
+ */
+function checkAuctionConclusion(s: GameState) {
+  const auction = s.pendingAuction;
+  if (!auction) return;
+  const active = s.players.filter((p) => !p.bankrupt && !auction.passed.includes(p.id));
+  if (active.length > 1) return;
+  if (active.length === 1 && active[0].id !== auction.highBidderId) return;
+
+  const t = tile(auction.tile);
+  if (auction.highBidderId) {
+    const winner = playerById(s, auction.highBidderId);
+    if (winner.cash >= auction.highBid) {
+      winner.cash -= auction.highBid;
+      ownState(s, auction.tile).owner = winner.id;
+      log(s, `${winner.name} wins the auction for ${t.name} at ${money(auction.highBid)}.`);
+    } else {
+      // Defensive only — bids are capped at cash-on-hand at bid time, and
+      // nothing else can move a player's cash while turnPhase is "auction".
+      log(s, `${winner.name} can no longer cover the bid. ${t.name} stays with the bank.`);
+    }
+  } else {
+    log(s, `No bids on ${t.name}. It stays with the bank.`);
+  }
+
+  s.pendingAuction = null;
   s.turnPhase = "resolve";
-  if (index !== null) log(s, `${current(s).name} passed on ${tile(index).name}.`);
 }
 
 function doPayJailFine(s: GameState, playerId: string) {
