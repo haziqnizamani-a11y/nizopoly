@@ -48,6 +48,10 @@ class SoundEngine {
     return this.muted;
   }
 
+  isRunning(): boolean {
+    return this.ctx?.state === "running";
+  }
+
   /** Returns an unsubscribe function suitable for a useEffect cleanup. */
   onChange(fn: (muted: boolean) => void): () => void {
     this.listeners.add(fn);
@@ -256,14 +260,46 @@ class SoundEngine {
 
 export const sound = new SoundEngine();
 
-/** Attach once so the first tap anywhere unlocks audio. */
+/**
+ * Attach so the first trustworthy gesture unlocks audio.
+ *
+ * This used to listen for `pointerdown` only, which is exactly why sound
+ * worked on desktop and not on mobile: Chrome credits `pointerdown` toward
+ * the autoplay gesture requirement, but iOS Safari does not — it only credits
+ * the gesture that actually completes a tap (`click`/`touchend`), since a
+ * `pointerdown`/`touchstart` could still turn into a scroll or a cancelled
+ * touch. A single missed attempt used to be permanent, too: `{ once: true }`
+ * detached the listener regardless of whether `ensure()` actually succeeded.
+ * This retries on every qualifying gesture until the context is confirmed
+ * running.
+ */
 export function primeAudioOnFirstGesture() {
   if (typeof window === "undefined") return;
-  const unlock = () => {
-    void sound.ensure();
-    window.removeEventListener("pointerdown", unlock);
-    window.removeEventListener("keydown", unlock);
+
+  const tryUnlock = () => {
+    void sound.ensure().then(() => {
+      if (sound.isRunning()) detach();
+    });
   };
-  window.addEventListener("pointerdown", unlock, { once: true });
-  window.addEventListener("keydown", unlock, { once: true });
+  const detach = () => {
+    window.removeEventListener("click", tryUnlock);
+    window.removeEventListener("touchend", tryUnlock);
+    window.removeEventListener("keydown", tryUnlock);
+  };
+
+  window.addEventListener("click", tryUnlock);
+  window.addEventListener("touchend", tryUnlock, { passive: true });
+  window.addEventListener("keydown", tryUnlock);
+
+  // iOS suspends the audio context when the tab is backgrounded — switching
+  // apps mid-game, taking a call. Re-attempt on return; if the browser still
+  // insists on a fresh gesture, the listeners above are already back in play.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && !sound.isRunning()) {
+      window.addEventListener("click", tryUnlock);
+      window.addEventListener("touchend", tryUnlock, { passive: true });
+      window.addEventListener("keydown", tryUnlock);
+      void sound.ensure();
+    }
+  });
 }
