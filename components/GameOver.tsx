@@ -38,7 +38,7 @@ export function GameOver({
         style={{ background: "color-mix(in srgb, var(--gold) 16%, transparent)" }}
       >
         <div className="label">Final standings</div>
-        <div className="text-2xl font-black leading-tight">
+        <div className="money text-2xl leading-tight" style={{ fontFamily: "var(--font-display)" }}>
           🏆 {winner?.player.name} wins
         </div>
         {youPlaced && (
@@ -62,7 +62,7 @@ export function GameOver({
               className="flex items-center gap-3 border-t border-[var(--line)] px-3 py-2.5"
               style={{
                 background: isMe
-                  ? "color-mix(in srgb, var(--accent) 10%, transparent)"
+                  ? "color-mix(in srgb, var(--green) 8%, transparent)"
                   : "transparent",
               }}
             >
@@ -86,7 +86,7 @@ export function GameOver({
                   <span className="truncate">{player.name}</span>
                   {isMe && <span className="label shrink-0">you</span>}
                 </div>
-                <div className="text-xs text-[var(--ink-soft)]">
+                <div className="money text-xs text-[var(--ink-soft)]">
                   {player.bankrupt
                     ? "Bankrupt"
                     : `${money(worth)} · ${propertyCount(player.id)} propert${

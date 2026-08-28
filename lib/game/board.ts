@@ -19,15 +19,20 @@ export const MAX_JAIL_TURNS = 3;
 export const HOUSE_SUPPLY = 32;
 export const HOTEL_SUPPLY = 12;
 
+/**
+ * Group hues from the "Register" design handoff (IMPLEMENTATION.md §1): one
+ * band of mid-tone, warm colours, chosen so none of them collide with a
+ * player colour (see PLAYER_COLORS in components/PlayerList.tsx).
+ */
 export const GROUPS: Record<GroupId, { name: string; color: string; tiles: number[] }> = {
-  interior: { name: "Interior Sindh", color: "#8d6e4a", tiles: [1, 3] },
-  hyderabad: { name: "Hyderabad", color: "#8ecae6", tiles: [6, 8, 9] },
-  oldCity: { name: "Old Karachi", color: "#d16ba5", tiles: [11, 13, 14] },
-  campus: { name: "Campus & Cafes", color: "#e08a3c", tiles: [16, 18, 19] },
-  nightlife: { name: "Nightlife", color: "#d64545", tiles: [21, 23, 24] },
-  uptown: { name: "Uptown", color: "#e3c02b", tiles: [26, 27, 29] },
-  clifton: { name: "Clifton", color: "#1f7a4d", tiles: [31, 32, 34] },
-  premium: { name: "Premium", color: "#2b4d9c", tiles: [37, 39] },
+  interior: { name: "Interior Sindh", color: "#7A5230", tiles: [1, 3] },
+  hyderabad: { name: "Hyderabad", color: "#7E9DA8", tiles: [6, 8, 9] },
+  oldCity: { name: "Old Karachi", color: "#9C5A63", tiles: [11, 13, 14] },
+  campus: { name: "Campus & Cafes", color: "#C08A3E", tiles: [16, 18, 19] },
+  nightlife: { name: "Nightlife", color: "#A33C2E", tiles: [21, 23, 24] },
+  uptown: { name: "Uptown", color: "#97913C", tiles: [26, 27, 29] },
+  clifton: { name: "Clifton", color: "#2A7A50", tiles: [31, 32, 34] },
+  premium: { name: "Premium", color: "#2E4372", tiles: [37, 39] },
 };
 
 export const STATION_TILES = [5, 15, 25, 35];

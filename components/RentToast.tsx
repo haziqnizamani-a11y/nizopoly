@@ -28,11 +28,11 @@ export function RentToast({ state, me }: { state: GameState; me: string | null }
       role="status"
       className="card slide-in fixed inset-x-4 top-4 z-40 mx-auto max-w-sm p-3 text-center"
       style={{
-        borderColor: "var(--accent)",
-        background: "color-mix(in srgb, var(--accent) 14%, var(--surface))",
+        borderColor: "var(--green)",
+        background: "color-mix(in srgb, var(--green) 10%, var(--surface))",
       }}
     >
-      <div className="text-lg font-black text-[var(--accent)]">
+      <div className="money text-lg" style={{ color: "var(--green)", fontFamily: "var(--font-display)" }}>
         + {money(shown.amount)}
       </div>
       <div className="text-sm">

@@ -68,7 +68,12 @@ export default function Home() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-5 p-5">
       <header className="text-center">
-        <h1 className="text-5xl font-black tracking-tight text-[var(--accent)]">NIZOPOLY</h1>
+        <h1
+          className="money text-5xl tracking-tight"
+          style={{ color: "var(--green)", fontFamily: "var(--font-display)" }}
+        >
+          Nizopoly
+        </h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
           Karachi, Hyderabad and the orchard — buy it all.
         </p>

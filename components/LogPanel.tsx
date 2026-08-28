@@ -7,28 +7,50 @@ export function LogPanel({ state }: { state: GameState }) {
   const ref = useRef<HTMLOListElement>(null);
   const count = state.log.length;
 
+  // Newest entries render at the top now, so a new one just needs the list
+  // scrolled back up if the reader had drifted down into older history.
   useEffect(() => {
     const el = ref.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el) el.scrollTop = 0;
   }, [count]);
 
+  // Newest first for reading; fade the ink the further back an entry sits.
+  const rows = [...state.log].reverse();
+
   return (
-    <div className="card flex min-h-0 flex-col p-3">
-      <div className="label mb-2">Game log</div>
+    <section>
+      <div className="mb-1.5 flex items-center gap-2">
+        <span className="label shrink-0">The log</span>
+        <span className="h-px flex-1" style={{ background: "var(--line-hair)" }} />
+      </div>
+
       <ol
         ref={ref}
         aria-live="polite"
-        className="flex max-h-56 min-h-0 flex-col gap-1 overflow-y-auto pr-1 text-xs leading-snug"
+        className="flex max-h-56 min-h-0 flex-col overflow-y-auto pr-1 text-xs leading-snug"
       >
-        {state.log.map((l, i) => (
+        {rows.map((l, i) => (
           <li
             key={l.id}
-            className={`text-[var(--ink-soft)] ${i === count - 1 ? "slide-in font-medium text-[var(--ink)]" : ""}`}
+            className="py-1"
+            style={
+              i === 0
+                ? {
+                    background: "var(--surface-2)",
+                    borderLeft: "2px solid var(--gold)",
+                    paddingLeft: "8px",
+                    color: "var(--ink)",
+                  }
+                : {
+                    paddingLeft: "10px",
+                    color: i < 5 ? "var(--ink-soft)" : "var(--ink-faint)",
+                  }
+            }
           >
             {l.text}
           </li>
         ))}
       </ol>
-    </div>
+    </section>
   );
 }

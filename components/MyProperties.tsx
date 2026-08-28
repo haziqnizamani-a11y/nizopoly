@@ -41,13 +41,13 @@ export function MyProperties({ state, me, busy, send, urgent = false }: Props) {
 
   return (
     <div
-      className="card p-3"
-      style={urgent ? { borderColor: "var(--danger)" } : undefined}
+      className={urgent ? "plate p-3" : "card p-3"}
+      style={urgent ? { ["--plate-rule" as string]: "var(--danger)" } : undefined}
     >
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <div className="label">Your properties · {owned.length}</div>
         {raisable > 0 && (
-          <div className="text-xs text-[var(--ink-soft)]">
+          <div className="money text-xs text-[var(--ink-soft)]">
             mortgage all: <span className="font-semibold text-[var(--ink)]">{money(raisable)}</span>
           </div>
         )}
@@ -98,7 +98,7 @@ export function MyProperties({ state, me, busy, send, urgent = false }: Props) {
               <div className="flex flex-wrap gap-1.5">
                 {st.mortgaged ? (
                   <button
-                    className="btn min-h-0 px-2 py-1 text-xs"
+                    className="btn btn-dense"
                     disabled={busy}
                     onClick={() => send({ type: "unmortgage", tile: t.index })}
                   >
@@ -106,7 +106,7 @@ export function MyProperties({ state, me, busy, send, urgent = false }: Props) {
                   </button>
                 ) : (
                   <button
-                    className="btn min-h-0 px-2 py-1 text-xs"
+                    className="btn btn-dense"
                     disabled={busy || st.houses > 0}
                     title={st.houses > 0 ? "Sell the buildings in this group first" : undefined}
                     onClick={() => send({ type: "mortgage", tile: t.index })}
@@ -117,7 +117,7 @@ export function MyProperties({ state, me, busy, send, urgent = false }: Props) {
 
                 {isProperty(t) && st.houses > 0 && (
                   <button
-                    className="btn min-h-0 px-2 py-1 text-xs"
+                    className="btn btn-dense"
                     disabled={busy}
                     onClick={() => send({ type: "sellHouse", tile: t.index })}
                   >
@@ -127,14 +127,14 @@ export function MyProperties({ state, me, busy, send, urgent = false }: Props) {
 
                 {canBuild && !urgent && (
                   <button
-                    className="btn min-h-0 px-2 py-1 text-xs"
+                    className="btn btn-dense"
                     disabled={busy}
                     onClick={() => {
                       sound.play("build");
                       send({ type: "build", tile: t.index });
                     }}
                   >
-                    🏠 Build · {money(t.houseCost)}
+                    Build · {money(t.houseCost)}
                   </button>
                 )}
               </div>

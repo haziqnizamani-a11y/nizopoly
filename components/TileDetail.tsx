@@ -33,7 +33,9 @@ export function TileDetail({ state, index, me, busy, send, onClose }: Props) {
     <div className="card slide-in p-3" key={index}>
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="truncate text-base font-bold">{t.name}</div>
+          <div className="money truncate text-[17px]" style={{ fontFamily: "var(--font-display)" }}>
+            {t.name}
+          </div>
           <div className="label">
             {isProperty(t)
               ? GROUPS[t.group].name
@@ -44,7 +46,7 @@ export function TileDetail({ state, index, me, busy, send, onClose }: Props) {
                   : t.kind}
           </div>
         </div>
-        <button className="btn btn-ghost px-2 py-1" onClick={onClose} aria-label="Close">
+        <button className="btn btn-ghost btn-dense px-2" onClick={onClose} aria-label="Close">
           ✕
         </button>
       </div>
@@ -64,10 +66,12 @@ export function TileDetail({ state, index, me, busy, send, onClose }: Props) {
         {owner ? (
           <>
             Owned by <span className="font-semibold">{owner.name}</span>
-            {own?.mortgaged && <span className="text-[var(--danger)]"> · mortgaged</span>}
+            {own?.mortgaged && <span style={{ color: "var(--danger)" }}> · mortgaged</span>}
           </>
         ) : isOwnable(t) ? (
-          <span className="text-[var(--ink-soft)]">Unowned · {money(t.price)}</span>
+          <span className="text-[var(--ink-soft)]">
+            Unowned · <span className="money">{money(t.price)}</span>
+          </span>
         ) : (
           <span className="text-[var(--ink-soft)]">Not a property.</span>
         )}
@@ -76,7 +80,10 @@ export function TileDetail({ state, index, me, busy, send, onClose }: Props) {
       {isProperty(t) && <RentTable state={state} index={index} />}
 
       {isStation(t) && (
-        <div className="mb-2 overflow-hidden rounded-lg border border-[var(--line)] text-xs">
+        <div
+          className="mb-2 overflow-hidden text-xs"
+          style={{ borderRadius: "var(--r-card)", border: "1px solid var(--line)" }}
+        >
           {[1, 2, 3, 4].map((n) => {
             const held = owner
               ? STATION_TILES.filter((i) => state.tiles[i]?.owner === owner.id).length
@@ -88,7 +95,7 @@ export function TileDetail({ state, index, me, busy, send, onClose }: Props) {
                 style={{
                   background:
                     n === held
-                      ? "color-mix(in srgb, var(--accent) 16%, transparent)"
+                      ? "color-mix(in srgb, var(--gold) 16%, transparent)"
                       : n % 2
                         ? "var(--surface-2)"
                         : "transparent",
@@ -98,7 +105,7 @@ export function TileDetail({ state, index, me, busy, send, onClose }: Props) {
                 <span>
                   {n} station{n > 1 ? "s" : ""} owned
                 </span>
-                <span>{money(STATION_RENT[n])}</span>
+                <span className="money">{money(STATION_RENT[n])}</span>
               </div>
             );
           })}
@@ -141,7 +148,10 @@ function RentTable({ state, index }: { state: GameState; index: number }) {
   const level = own?.houses ?? 0;
 
   return (
-    <div className="mb-2 overflow-hidden rounded-lg border border-[var(--line)] text-xs">
+    <div
+      className="mb-2 overflow-hidden text-xs"
+      style={{ borderRadius: "var(--r-card)", border: "1px solid var(--line)" }}
+    >
       {rows.map(([label, amount], i) => (
         <div
           key={label}
@@ -149,7 +159,7 @@ function RentTable({ state, index }: { state: GameState; index: number }) {
           style={{
             background:
               i === level && own?.owner
-                ? "color-mix(in srgb, var(--accent) 16%, transparent)"
+                ? "color-mix(in srgb, var(--gold) 16%, transparent)"
                 : i % 2
                   ? "var(--surface-2)"
                   : "transparent",
@@ -157,12 +167,15 @@ function RentTable({ state, index }: { state: GameState; index: number }) {
           }}
         >
           <span>{label}</span>
-          <span>{money(amount)}</span>
+          <span className="money">{money(amount)}</span>
         </div>
       ))}
-      <div className="flex justify-between border-t border-[var(--line)] px-2 py-1 text-[var(--ink-soft)]">
+      <div
+        className="flex justify-between px-2 py-1 text-[var(--ink-soft)]"
+        style={{ borderTop: "1px solid var(--line)" }}
+      >
         <span>House cost</span>
-        <span>{money(t.houseCost)}</span>
+        <span className="money">{money(t.houseCost)}</span>
       </div>
     </div>
   );
@@ -197,17 +210,17 @@ function ManageButtons({
       {isProperty(t) && (
         <>
           <button
-            className="btn"
+            className="btn btn-dense"
             disabled={busy || !canBuild}
             onClick={() => {
               sound.play("build");
               send({ type: "build", tile: index });
             }}
           >
-            🏠 Build {money(t.houseCost)}
+            Build {money(t.houseCost)}
           </button>
           <button
-            className="btn"
+            className="btn btn-dense"
             disabled={busy || own.houses === 0}
             onClick={() => send({ type: "sellHouse", tile: index })}
           >
@@ -217,7 +230,7 @@ function ManageButtons({
       )}
       {own.mortgaged ? (
         <button
-          className="btn col-span-2"
+          className="btn btn-dense col-span-2"
           disabled={busy}
           onClick={() => send({ type: "unmortgage", tile: index })}
         >
@@ -225,7 +238,7 @@ function ManageButtons({
         </button>
       ) : (
         <button
-          className="btn col-span-2"
+          className="btn btn-dense col-span-2"
           disabled={busy || own.houses > 0}
           onClick={() => send({ type: "mortgage", tile: index })}
         >

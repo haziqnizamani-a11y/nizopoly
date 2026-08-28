@@ -16,7 +16,7 @@ export function MuteButton() {
   return (
     <button
       type="button"
-      className="btn btn-ghost px-2 py-1"
+      className="btn btn-ghost btn-dense px-1.5"
       aria-pressed={muted}
       aria-label={muted ? "Turn sound on" : "Turn sound off"}
       title={muted ? "Sound off" : "Sound on"}

@@ -56,7 +56,7 @@ export function Lobby({ state, code, me, busy, send }: Props) {
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4">
       <div className="card p-5 text-center">
         <div className="label">Room code</div>
-        <div className="my-1 text-5xl font-black tracking-[0.2em] text-[var(--accent)]">{code}</div>
+        <div className="money my-1 text-5xl tracking-[0.2em]" style={{ color: "var(--green)", fontFamily: "var(--font-display)" }}>{code}</div>
         <p className="mb-3 text-sm text-[var(--ink-soft)]">
           Send this to everyone playing. They open the site and enter the code.
         </p>
@@ -126,8 +126,8 @@ export function Lobby({ state, code, me, busy, send }: Props) {
                 title={owner ? `Taken by ${owner}` : t.name}
                 className="flex flex-col items-center rounded-lg border px-3 py-2 disabled:opacity-35"
                 style={{
-                  borderColor: isMine ? "var(--accent)" : "var(--line)",
-                  background: isMine ? "color-mix(in srgb, var(--accent) 15%, transparent)" : "transparent",
+                  borderColor: isMine ? "var(--green)" : "var(--line)",
+                  background: isMine ? "color-mix(in srgb, var(--green) 12%, transparent)" : "transparent",
                 }}
               >
                 <span className="text-2xl">{t.emoji}</span>

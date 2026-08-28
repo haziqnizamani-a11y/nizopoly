@@ -12,6 +12,33 @@ interface Props {
   send: (a: RoomAction) => void;
 }
 
+/** The controls plate: a 2px top rule whose colour states the mode (gold =
+ * your move, stone = waiting, danger = a debt), with a tracked-caps label
+ * above a Playfair sentence headline — never just a bare button label. */
+function Plate({
+  rule,
+  label,
+  headline,
+  children,
+}: {
+  rule: "gold" | "stone" | "danger";
+  label: string;
+  headline: string;
+  children?: React.ReactNode;
+}) {
+  const ruleColor =
+    rule === "danger" ? "var(--danger)" : rule === "stone" ? "var(--stone-300)" : "var(--gold)";
+  return (
+    <div className="plate p-3" style={{ ["--plate-rule" as string]: ruleColor }}>
+      <div className="label mb-1">{label}</div>
+      <div className="money mb-2 text-[15px]" style={{ fontFamily: "var(--font-display)" }}>
+        {headline}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export function Controls({ state, me, busy, send }: Props) {
   if (state.phase !== "playing" || !me) return null;
 
@@ -23,11 +50,9 @@ export function Controls({ state, me, busy, send }: Props) {
 
   if (debt) {
     return (
-      <div className="card border-[var(--danger)] p-3">
-        <div className="label mb-1 text-[var(--danger)]">You owe {money(debt.amount)}</div>
+      <Plate rule="danger" label="Outstanding" headline={`You owe ${money(debt.amount)}.`}>
         <p className="mb-3 text-sm text-[var(--ink-soft)]">
-          Sell buildings, mortgage properties or trade to raise it. It settles automatically the
-          moment you have enough.
+          Mortgage, sell or trade your way out. The turn is blocked until the debt clears.
         </p>
         <button
           type="button"
@@ -39,102 +64,93 @@ export function Controls({ state, me, busy, send }: Props) {
         >
           Declare bankruptcy
         </button>
-      </div>
+      </Plate>
     );
   }
 
   if (!isMyTurn) {
-    const whose = state.players[state.turn]?.name ?? "someone";
+    const whose = state.players[state.turn]?.name ?? "Someone";
+    const verb = state.turnPhase === "roll" ? "rolling" : "playing";
     return (
-      <div className="card p-3 text-sm text-[var(--ink-soft)]">
-        Waiting on <span className="font-semibold text-[var(--ink)]">{whose}</span>. You can still
-        build, mortgage and offer trades.
-      </div>
+      <Plate rule="stone" label="Waiting" headline={`${whose} is ${verb}.`}>
+        <p className="text-sm text-[var(--ink-soft)]">
+          You can still build, mortgage and offer trades.
+        </p>
+      </Plate>
     );
   }
 
-  return (
-    <div className="card flex flex-col gap-2 p-3">
-      {state.turnPhase === "roll" && player.inJail && (
-        <>
-          <div className="label">
-            In jail — attempt {player.jailTurns + 1} of 3
-          </div>
+  if (state.turnPhase === "roll" && player.inJail) {
+    return (
+      <Plate
+        rule="gold"
+        label={`In jail · attempt ${player.jailTurns + 1} of 3`}
+        headline="Doubles, the fine, or the card."
+      >
+        <div className="flex flex-col gap-2">
           <button className="btn btn-primary" disabled={busy} onClick={() => send({ type: "roll" })}>
-            🎲 Roll for doubles
+            Roll for doubles
           </button>
           <div className="grid grid-cols-2 gap-2">
             <button
-              className="btn"
+              className="btn btn-outline"
               disabled={busy || player.cash < JAIL_FINE}
               onClick={() => send({ type: "payJailFine" })}
             >
               Pay {money(JAIL_FINE)}
             </button>
             <button
-              className="btn"
+              className="btn btn-outline"
               disabled={busy || player.getOutOfJailCards < 1}
               onClick={() => send({ type: "useJailCard" })}
             >
-              🎟️ Use card
+              Use card
             </button>
           </div>
-        </>
-      )}
+        </div>
+      </Plate>
+    );
+  }
 
-      {state.turnPhase === "roll" && !player.inJail && (
-        <button className="btn btn-primary" disabled={busy} onClick={() => send({ type: "roll" })}>
-          🎲 {state.doublesCount > 0 ? "Roll again (doubles)" : "Roll dice"}
+  if (state.turnPhase === "roll") {
+    return (
+      <Plate rule="gold" label="Your move" headline="Two dice, forty tiles.">
+        <button className="btn btn-primary w-full" disabled={busy} onClick={() => send({ type: "roll" })}>
+          {state.doublesCount > 0 ? "Roll again — doubles" : "Roll dice"}
         </button>
-      )}
+      </Plate>
+    );
+  }
 
-      {state.turnPhase === "decide_buy" && state.pendingPurchase !== null && (
-        <BuyPrompt state={state} busy={busy} send={send} cash={player.cash} />
-      )}
+  if (state.turnPhase === "decide_buy" && state.pendingPurchase !== null) {
+    const t = tile(state.pendingPurchase);
+    const price = isOwnable(t) ? t.price : 0;
+    return (
+      <Plate rule="gold" label="Your move" headline={`${t.name} is unowned — ${money(price)}.`}>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            className="btn btn-primary"
+            disabled={busy || player.cash < price}
+            onClick={() => send({ type: "buy" })}
+          >
+            Buy
+          </button>
+          <button className="btn btn-outline" disabled={busy} onClick={() => send({ type: "decline" })}>
+            Pass
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-[var(--ink-soft)]">
+          Passing leaves it with the bank — there is no auction.
+        </p>
+      </Plate>
+    );
+  }
 
-      {state.turnPhase === "resolve" && (
-        <button className="btn btn-primary" disabled={busy} onClick={() => send({ type: "endTurn" })}>
-          End turn
-        </button>
-      )}
-    </div>
-  );
-}
-
-function BuyPrompt({
-  state,
-  busy,
-  send,
-  cash,
-}: {
-  state: GameState;
-  busy: boolean;
-  send: (a: RoomAction) => void;
-  cash: number;
-}) {
-  const t = tile(state.pendingPurchase!);
-  const price = isOwnable(t) ? t.price : 0;
   return (
-    <>
-      <div className="text-sm">
-        <span className="font-semibold">{t.name}</span> is unowned —{" "}
-        <span className="font-semibold">{money(price)}</span>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          className="btn btn-primary"
-          disabled={busy || cash < price}
-          onClick={() => send({ type: "buy" })}
-        >
-          Buy
-        </button>
-        <button className="btn" disabled={busy} onClick={() => send({ type: "decline" })}>
-          Pass
-        </button>
-      </div>
-      <p className="text-xs text-[var(--ink-soft)]">
-        Passing leaves it with the bank — there is no auction.
-      </p>
-    </>
+    <Plate rule="gold" label="Your move" headline="Nothing left to do but end your turn.">
+      <button className="btn btn-primary w-full" disabled={busy} onClick={() => send({ type: "endTurn" })}>
+        End turn
+      </button>
+    </Plate>
   );
 }

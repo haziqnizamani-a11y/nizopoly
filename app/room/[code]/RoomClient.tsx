@@ -66,7 +66,12 @@ export function RoomClient({ code }: { code: string }) {
       <Centered>
         <div className="card w-full max-w-sm p-5">
           <div className="label mb-1">Room</div>
-          <div className="mb-3 text-3xl font-black tracking-[0.2em] text-[var(--accent)]">{code}</div>
+          <div
+            className="money mb-3 text-3xl tracking-[0.2em]"
+            style={{ color: "var(--green)", fontFamily: "var(--font-display)" }}
+          >
+            {code}
+          </div>
           {canJoin ? (
             <>
               <input
@@ -127,8 +132,15 @@ export function RoomClient({ code }: { code: string }) {
   return (
     <main className="mx-auto w-full max-w-6xl p-3 lg:p-5">
       <header className="mb-3 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-black tracking-tight text-[var(--accent)]">NIZOPOLY</h1>
-        <span className="label">Room {code}</span>
+        <h1
+          className="money text-[19px] tracking-[0.1em]"
+          style={{ color: "var(--ink)", fontFamily: "var(--font-display)" }}
+        >
+          Nizopoly
+        </h1>
+        <span className="label" style={{ color: "var(--gold-600)" }}>
+          Room {code}
+        </span>
       </header>
 
       <MoneyBar state={state} me={me} />
@@ -138,7 +150,7 @@ export function RoomClient({ code }: { code: string }) {
       {winner && <GameOver state={state} me={me} onNewGame={() => router.push("/")} />}
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_21rem]">
-        <div className="board-scroll mx-auto w-full min-w-0" style={{ maxWidth: "min(100%, 54rem)" }}>
+        <div className="mx-auto w-full min-w-0" style={{ maxWidth: "min(100%, 54rem)" }}>
           <Board state={state} me={me} selected={selected} onSelect={setSelected} />
         </div>
 
